@@ -1,21 +1,27 @@
 const jwt = require("jsonwebtoken");
-const jwtSecret = process.env.JWT_SECRET;
+const { logger } = require("../utils/logger"); // Optional, for logging purposes
 
 const verifyJWT = (req, res, next) => {
-  const token = req.headers["authorization"]?.split(" ")[1]; // Extract token from "Authorization" header
-
-  if (!token) {
-    return res.status(401).json({ error: "No token provided." });
+  // Exempt only POST requests to /students/enroll
+  if (req.method === "POST" && req.path === "/enroll") {
+    logger.info("Exempting JWT verification for /students/enroll");
+    return next(); // Skip JWT verification and move to the next middleware/route handler
   }
 
-  jwt.verify(token, jwtSecret, (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ error: "Token is invalid or expired." });
-    }
+  const token = req.header("Authorization")?.split(" ")[1]; // Extract token from 'Authorization' header
 
-    req.user = decoded; // Attach the decoded user data (including role) to req.user
+  if (!token) {
+    return res.status(404).json({ error: "No token provided." });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the JWT
+    req.user = decoded;
     next();
-  });
+  } catch (err) {
+    logger.error("Invalid token", err); // Log error, optional
+    return res.status(401).json({ error: "Invalid token." });
+  }
 };
 
 module.exports = verifyJWT;

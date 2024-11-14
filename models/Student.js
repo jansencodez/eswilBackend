@@ -23,6 +23,19 @@ const StudentSchema = new mongoose.Schema(
       min: [0, "Fee amount must be a positive number"],
     },
     guardian: { type: mongoose.Schema.Types.ObjectId, ref: "Guardian" },
+    teachers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Teacher",
+        required: true, // Keeps the field required
+      },
+    ],
+    subjects: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Subject", // Reference to the Subject model
+      },
+    ],
   },
   { timestamps: true } // Automatically add createdAt and updatedAt
 );

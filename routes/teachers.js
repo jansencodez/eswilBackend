@@ -1,6 +1,9 @@
 const express = require("express");
 const Teacher = require("../models/Teacher"); // Import the Teacher model
 const router = express.Router();
+const verifyJWT = require("../middleware/verifyJWT");
+const jwt = require("jsonwebtoken");
+const jwtSecret = process.env.JWT_SECRET;
 
 // Get all teachers
 router.get("/", async (req, res) => {
@@ -12,15 +15,47 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Get a single teacher by ID
-router.get("/:id", async (req, res) => {
-  const { id } = req.params;
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
 
   try {
-    const teacher = await Teacher.findById(id).populate("subjects.students"); // Populate students in subjects
+    const teacher = await Teacher.findOne({ email });
 
     if (!teacher) {
-      return res.status(404).json({ message: "Teacher not found" });
+      return res.status(404).json({ error: "Teacher not found" });
+    }
+
+    // Uncomment if you want password verification
+    // const isPasswordValid = await bcrypt.compare(password, teacher.password);
+    // if (!isPasswordValid) {
+    //   return res.status(400).json({ error: "Invalid email or password" });
+    // }
+
+    // Generate JWT token
+    const token = jwt.sign({ id: teacher._id, role: "teacher" }, jwtSecret, {
+      expiresIn: "1h",
+    });
+
+    res.json({
+      message: "Login successful",
+      token,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get a single teacher by ID
+router.get("/dashboard", verifyJWT, async (req, res) => {
+  const { id } = req.user; // `id` is available from the decoded token
+
+  try {
+    const teacher = await Teacher.findById(id)
+      .populate("subjects.students") // Populate students in subjects
+      .exec();
+
+    if (!teacher) {
+      return res.status(404).json({ error: "Teacher not found" });
     }
 
     res.json(teacher);

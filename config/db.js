@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 let isConnected = false;
 
-const connectMongo = async () => {
+const connectDB = async () => {
   if (isConnected) {
     console.log("Using existing database connection to Mongo");
     return;
@@ -10,12 +10,13 @@ const connectMongo = async () => {
 
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI);
-    isConnected = conn.connections[0].readyState;
+    isConnected = conn.connections[0].readyState === 1;
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    return conn; // Optional: Return the connection object
   } catch (e) {
-    console.log(`Error: ${e.message}`);
+    console.error(`Error connecting to MongoDB: ${e.message}`);
     process.exit(1);
   }
 };
 
-module.exports = connectMongo;
+module.exports = connectDB;

@@ -3,8 +3,12 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Admin = require("../models/Admin");
 const jwtSecret = process.env.JWT_SECRET;
-const authorizeRole = require("../middleware/authorizeRole"); // Role-based authorization middleware
-const verifyJWT = require("../middleware/verifyJWT"); // JWT verification middleware
+const authorizeRole = require("../middleware/authorizeRole");
+const Student = require("../models/Student");
+const Teacher = require("../models/Teacher");
+const ActivityLog = require("../models/ActivityLog");
+const verifyJWT = require("../middleware/verifyJWT");
+const { logger } = require("../utils/logger");
 
 const router = express.Router();
 
@@ -15,6 +19,26 @@ router.get("/", verifyJWT, authorizeRole(["superadmin"]), async (req, res) => {
     res.json(admins);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/dashboard/data", verifyJWT, async (req, res) => {
+  try {
+    // Find the admin in the database by the ID from the token
+    const adminData = await Admin.findById(req.user.id).select("-password"); // Exclude the password field
+
+    if (!adminData) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    // Send a greeting message with the admin's data
+    res.json({
+      message: `Hello, ${adminData.name}`,
+      adminData,
+    });
+  } catch (error) {
+    console.error("Error fetching admin data:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -43,7 +67,7 @@ router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const admin = await Admin.findOne({ email }); // Find admin by email
+    const admin = await Admin.findOne({ email });
 
     if (!admin) {
       return res.status(400).json({ error: "Admin not found" });
@@ -60,7 +84,11 @@ router.post("/login", async (req, res) => {
       expiresIn: "1h",
     });
 
-    res.json({ token });
+    // Send the token in the response body
+    res.json({
+      message: "Login successful",
+      token: token,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -174,5 +202,34 @@ router.put(
     }
   }
 );
+
+router.get("/dashboard/summary", async (req, res) => {
+  try {
+    const totalStudents = await Student.countDocuments();
+    const totalTeachers = await Teacher.countDocuments();
+
+    const recentActivity = await ActivityLog.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select("description createdAt")
+      .lean();
+
+    const formattedActivity = recentActivity.map((activity) => ({
+      description: activity.description,
+      date: activity.createdAt.toISOString().split("T")[0],
+    }));
+
+    res.status(200).json({
+      totalStudents,
+      totalTeachers,
+      recentActivity: formattedActivity,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch dashboard data",
+      details: error.message || "No error details available",
+    });
+  }
+});
 
 module.exports = router;

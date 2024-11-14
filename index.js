@@ -8,17 +8,18 @@ const studentsRoutes = require("./routes/students");
 const adminsRoutes = require("./routes/admins");
 const teacherRoutes = require("./routes/teachers");
 const updateRoutes = require("./routes/update");
-const connectMongo = require("./config/mongo");
+const reportsRoutes = require("./routes/reports");
 
+const connectDB = require("./config/db");
 const app = express();
 const port = process.env.PORT || 3001;
 
 // Connect to MongoDB
-connectMongo();
 
+connectDB();
 // Middleware
 app.use(helmet()); // Security headers
-const allowedOrigins = process.env.FRONTEND_URL || "http://localhost:3000"; // Change this to your frontend URL
+const allowedOrigins = "http://192.168.100.134:3000"; // Change this to your frontend URL
 
 app.use(
   cors({
@@ -42,6 +43,7 @@ app.use("/api/students", studentsRoutes);
 app.use("/api/admins", adminsRoutes);
 app.use("/api/teachers", teacherRoutes);
 app.use("/api/update", updateRoutes);
+app.use("/api/reports", reportsRoutes);
 
 // Health Check Endpoint
 app.get("/health", (req, res) => {

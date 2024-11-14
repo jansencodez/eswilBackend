@@ -5,7 +5,7 @@ const GuardianSchema = new mongoose.Schema({
   email: { type: String, required: false },
   relationship: { type: String, required: true },
   phone: { type: String, required: true },
-  student: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],
+  students: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],
 });
 
 module.exports = mongoose.model("Guardian", GuardianSchema);
