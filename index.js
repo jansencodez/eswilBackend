@@ -19,7 +19,7 @@ const port = process.env.PORT || 3001;
 connectDB();
 // Middleware
 app.use(helmet()); // Security headers
-const allowedOrigins = "http://192.168.100.134:3000"; // Change this to your frontend URL
+const allowedOrigins = process.env.FRONTEND_URL;
 
 app.use(
   cors({
